@@ -1,0 +1,46 @@
+﻿@model Adyen.EcommLibrary.Model.Reccuring.RecurringDetailsResult
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<script type="text/javascript" src="https://test.adyen.com/hpp/cse/js/8215288919213922.shtml">
+</script>
+
+<div class="row">
+    <div class="col-md-3">
+        <h2>My shopping cards (My reference is @Model.ShopperReference)</h2>
+        <form method="GET" action="/Home/CreatePaymentUsingOldData">
+            <table border="1">
+                <thead>
+                <th>Name :</th>
+                <th>Alias: </th>
+                <th>RecurringDetailReference: </th>
+                <th>Variant:</th>
+                <th>paymentMethodVariant: </th>
+                <th>holdername:</th>
+                <th>mm/yyyy:</th>
+                <th>Brand: </th>
+                </thead>
+                <tbody>
+
+                    @foreach (var shoppinCard in @Model.Details)
+                    {
+                        <tr>
+                            <td>@shoppinCard.RecurringDetail.Name</td>
+                            <td>@shoppinCard.RecurringDetail.Alias</td>
+                            <td>@shoppinCard.RecurringDetail.RecurringDetailReference</td>
+                            <td>@shoppinCard.RecurringDetail.Variant</td>
+                            <td>@shoppinCard.RecurringDetail.PaymentMethodVariant</td>
+                            <td> @shoppinCard.RecurringDetail.Card.HolderName</td>
+                            <td> @shoppinCard.RecurringDetail.Card.ExpiryMonth/@shoppinCard.RecurringDetail.Card.ExpiryYear</td>
+                            <td>@shoppinCard.RecurringDetail.Card.Brand</td>
+                            <td>@Html.RadioButton("RecurringDetailReference", shoppinCard.RecurringDetail.RecurringDetailReference)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <input type="submit" value="Pay"/>
+        </form>
+        <a href="/home/AddCreditCard">Add credit card</a>
+    </div>
+</div>

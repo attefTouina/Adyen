@@ -1,0 +1,28 @@
+﻿@model System.String
+@{
+    ViewData["Title"] = "Payment";
+}
+
+<h2>Pay</h2>
+
+<script type="text/javascript" src="https://test.adyen.com/hpp/cse/js/8215288919213922.shtml">
+
+</script>
+<form method="POST" action="/Home/CreatePaymentUsingOldDataPost?recurringDetailReference=@ViewData["RecurringDetailReference"]" id="adyen-encrypted-form">
+    cvc<input type="text" size="4" data-encrypted-name="cvc" value="737" /><br />
+    <input type="hidden" value="@ViewData["generationtime"]" data-encrypted-name="generationtime" /><br />
+    Amount : <input type="number" name="amount" /> (EUR)<br />
+    <input type="submit" value="Pay" />
+</form>
+<script>
+    // The form element to encrypt.
+    var form = document.getElementById('adyen-encrypted-form');
+    // See https://github.com/Adyen/CSE-JS/blob/master/Options.md for details on the options to use.
+    var options = {
+        name: "AdyenEncryptedData"
+    };
+    // Bind encryption options to the form.
+    adyen.createEncryptedForm(form, options);
+</script>
+
+
