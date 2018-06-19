@@ -36,7 +36,31 @@ namespace WebApplication1.Controllers
             return View("Index", shoppingCards);
         }
 
+        public IActionResult Refund()
+        {
+            return View();
+        }
 
+        [HttpPost]
+        public IActionResult Refund(RefundRequestDto refundRequestDto)
+        {
+            try
+            {
+                var result = _adyenClient.Refund(refundRequestDto.PspReference, "EUR", refundRequestDto.Amount);
+                if(result.Response ==ResponseEnum.RefundReceived )
+                {
+                    return Ok(result);
+                }
+                return BadRequest(result);
+            }
+            catch (WebException e)
+            {
+                var resp = new StreamReader(e.Response.GetResponseStream()).ReadToEnd();
+                dynamic obj = JsonConvert.DeserializeObject(resp);
+                return BadRequest(obj);
+            }
+
+        }
         public IActionResult AddCreditCard()
         {
             return View("AddCreditCard", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"));
@@ -67,40 +91,6 @@ namespace WebApplication1.Controllers
             }
         }
 
-
-
-        //first time 
-        public IActionResult CreatePayment()
-        {
-            return View("CreatePayment", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-        }
-
-        [HttpPost]
-        public IActionResult CreatePayment(CardEncryptedData data)
-        {
-            var shopper = new Shopper
-            {
-                Email = "attef@alphorm.com",
-                FirstName = "Attef",
-                LastName = "Touina",
-                Reference = "AttefRef"
-            };
-
-            var result = _adyenClient.CreatePayment(1500,
-                shopper,
-                Guid.NewGuid().ToString(),
-                data.AdyenEncryptedData,
-                "EUR");
-
-            _adyenClient.Capture(result.PspReference, "EUR", 1000);
-            return Ok(result);
-        }
-
-        public IActionResult Details(string shopperRef)
-        {
-            return Ok(_adyenClient.ListRecurringDetails(shopperRef));
-        }
-
         public IActionResult CreatePaymentUsingOldData(string recurringDetailReference)
         {
             ViewData["generationtime"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
@@ -122,10 +112,10 @@ namespace WebApplication1.Controllers
                     data.AdyenEncryptedData,
                     "EUR",
                     recurringDetailReference);
-                if(result.ResultCode == ResultCodeEnum.Authorised)
+                if (result.ResultCode == ResultCodeEnum.Authorised)
                 {
                     var captureResult = _adyenClient.Capture(result.PspReference, "EUR", data.Amount);
-                    if(captureResult.Response == ResponseEnum.CaptureReceived)
+                    if (captureResult.Response == ResponseEnum.CaptureReceived)
                     {
                         return Ok(captureResult);
                     }

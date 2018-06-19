@@ -96,6 +96,19 @@ namespace WebApplication1.AdyenAPI
            return modification.Capture(captureRequest);
         }
 
+        public ModificationResult Refund(string pspReference, string currency, long amount)
+        {
+            var modification = new Modification(client);
+
+            var captureRequest = new RefundRequest
+            {
+                MerchantAccount = _adyenConfiguration.MerchantAccount,
+                ModificationAmount = new Amount(currency, amount),
+                OriginalReference = pspReference
+            };
+            return modification.Refund(captureRequest);
+        }
+
 
     }
 
