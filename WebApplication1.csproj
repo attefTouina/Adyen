@@ -14,7 +14,7 @@
     <Content Update="Views\Home\AddCreditCard.cshtml">
       <Pack>$(IncludeRazorContentInPack)</Pack>
     </Content>
-    <Content Update="Views\Home\CreatePaymentUsingOldData.cshtml">
+    <Content Update="Views\Home\PayUsingOldData.cshtml">
       <Pack>$(IncludeRazorContentInPack)</Pack>
     </Content>
   </ItemGroup>

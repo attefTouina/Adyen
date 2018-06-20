@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Adyen.EcommLibrary;
 using Adyen.EcommLibrary.Model;
 using Adyen.EcommLibrary.Model.Enum;
@@ -12,16 +15,32 @@ namespace WebApplication1.AdyenAPI
     public class AdyenClient
     {
         private readonly AdyenConfiguration _adyenConfiguration;
-        private Client client;
+        private readonly Client _client;
+        private HttpClient httpClient;
 
         public AdyenClient(AdyenConfiguration adyenConfiguration)
         {
             _adyenConfiguration = adyenConfiguration;
-            client = new Client(
+            _client = new Client(
                 _adyenConfiguration.Username,
                 _adyenConfiguration.Password,
                 Environment.Test,
                 _adyenConfiguration.MerchantAccount);
+
+            httpClient = new HttpClient();
+            var credencials = string.Format("{0}:{1}", _adyenConfiguration.Username, _adyenConfiguration.Password);
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue(
+                    "Basic",
+                    Convert.ToBase64String(
+                        System.Text.Encoding.ASCII.GetBytes(
+                            credencials))); ;
+        }
+
+
+        public void AddCreditCard()
+        {
+
         }
 
         public PaymentResult CreatePayment(
@@ -29,25 +48,12 @@ namespace WebApplication1.AdyenAPI
             Shopper shopper,
             string paymentReference,
             string cardData,
+            Contract recurringContract,
             string currency = "EUR",
             string selectedRecurringDetailReference = null)
         {
-            var payment = new Payment(client);
-            var paymentRequest = CreatePaymentRequest(currency, amount, paymentReference,
-                shopper, cardData);
-            if (!string.IsNullOrEmpty(selectedRecurringDetailReference))
-            {
-                paymentRequest.SelectedRecurringDetailReference = selectedRecurringDetailReference;
-                paymentRequest.ShopperInteraction = ShopperInteraction.Ecommerce;
-            }
-
-            return payment.Authorise(paymentRequest);
-        }
-
-        private PaymentRequest CreatePaymentRequest(string currency,
-            long amount, string paymentReference, Shopper shopper, string cardData)
-        {
-            return new PaymentRequest
+            var payment = new Payment(_client);
+            var paymentRequest = new PaymentRequest
             {
                 MerchantAccount = _adyenConfiguration.MerchantAccount,
                 Amount = new Amount(currency, amount),
@@ -61,19 +67,57 @@ namespace WebApplication1.AdyenAPI
                 },
                 Recurring = new Adyen.EcommLibrary.Model.Reccuring.Recurring
                 {
-                    Contract = Contract.Oneclick
+                    Contract = recurringContract
                 },
                 AdditionalData = new Dictionary<string, string>
                 {
                     {"card.encrypted.json", cardData}
                 }
             };
+            if (!string.IsNullOrEmpty(selectedRecurringDetailReference))
+            {
+                paymentRequest.SelectedRecurringDetailReference = selectedRecurringDetailReference;
+                paymentRequest.ShopperInteraction = ShopperInteraction.Ecommerce;
+            }
+
+            return payment.Authorise(paymentRequest);
+        }
+
+        public PaymentResult CreatePaymentForSubscription(long amount,
+            Shopper shopper,
+            string paymentReference,
+            Contract recurringContract,
+            string selectedRecurringDetailReference,
+            string currency = "EUR")
+        {
+            var payment = new Payment(_client);
+            var paymentRequest = new PaymentRequest
+            {
+                MerchantAccount = _adyenConfiguration.MerchantAccount,
+                Amount = new Amount(currency, amount),
+                Reference = paymentReference,
+                ShopperEmail = shopper.Email,
+                ShopperReference = shopper.Reference,
+                ShopperName = new Name
+                {
+                    FirstName = shopper.FirstName,
+                    LastName = shopper.LastName
+                },
+                Recurring = new Adyen.EcommLibrary.Model.Reccuring.Recurring
+                {
+                    Contract = Contract.Recurring
+                }
+            };
+            paymentRequest.SelectedRecurringDetailReference = selectedRecurringDetailReference;
+            paymentRequest.ShopperInteraction = ShopperInteraction.ContAuth;
+
+            return payment.Authorise(paymentRequest);
         }
 
 
         public RecurringDetailsResult ListRecurringDetails(string shopperReference)
         {
-            var recurring = new Adyen.EcommLibrary.Service.Recurring(client);
+            var recurring = new Adyen.EcommLibrary.Service.Recurring(_client);
             var request = new RecurringDetailsRequest
             {
                 ShopperReference = shopperReference,
@@ -85,20 +129,20 @@ namespace WebApplication1.AdyenAPI
 
         public ModificationResult Capture(string pspReference, string currency, long amount)
         {
-            var modification = new Modification(client);
+            var modification = new Modification(_client);
 
             var captureRequest = new CaptureRequest
             {
                 MerchantAccount = _adyenConfiguration.MerchantAccount,
                 ModificationAmount = new Amount(currency, amount),
-                OriginalReference= pspReference
+                OriginalReference = pspReference
             };
-           return modification.Capture(captureRequest);
+            return modification.Capture(captureRequest);
         }
 
         public ModificationResult Refund(string pspReference, string currency, long amount)
         {
-            var modification = new Modification(client);
+            var modification = new Modification(_client);
 
             var captureRequest = new RefundRequest
             {

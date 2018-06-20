@@ -1,18 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using Adyen.EcommLibrary;
-using Adyen.EcommLibrary.Model;
 using Adyen.EcommLibrary.Model.Enum;
-using Adyen.EcommLibrary.Model.Reccuring;
-using Adyen.EcommLibrary.Service;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using WebApplication1.AdyenAPI;
-using Environment = Adyen.EcommLibrary.Model.Enum.Environment;
-using Recurring = Adyen.EcommLibrary.Service.Recurring;
 
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -21,13 +13,11 @@ namespace WebApplication1.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly AdyenConfiguration _adyenConfiguration;
         private readonly AdyenClient _adyenClient;
 
         public HomeController(AdyenConfiguration adyenConfiguration, AdyenClient adyenClient)
         {
-            _adyenConfiguration = adyenConfiguration;
-            this._adyenClient = adyenClient;
+            _adyenClient = adyenClient;
         }
 
         public IActionResult Index()
@@ -36,6 +26,7 @@ namespace WebApplication1.Controllers
             return View("Index", shoppingCards);
         }
 
+        #region Refund
         public IActionResult Refund()
         {
             return View();
@@ -47,7 +38,7 @@ namespace WebApplication1.Controllers
             try
             {
                 var result = _adyenClient.Refund(refundRequestDto.PspReference, "EUR", refundRequestDto.Amount);
-                if(result.Response ==ResponseEnum.RefundReceived )
+                if (result.Response == ResponseEnum.RefundReceived)
                 {
                     return Ok(result);
                 }
@@ -61,13 +52,17 @@ namespace WebApplication1.Controllers
             }
 
         }
+
+        #endregion
+
+        #region Add Credit Card
         public IActionResult AddCreditCard()
         {
             return View("AddCreditCard", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"));
         }
 
         [HttpPost]
-        public IActionResult AddCreditCard(CreditCardData data)
+        public IActionResult AddCreditCard(AddCreditCardDto dto)
         {
             var shopper = Shopper.Default;
             try
@@ -75,7 +70,8 @@ namespace WebApplication1.Controllers
                 var result = _adyenClient.CreatePayment(0,
                     shopper,
                     Guid.NewGuid().ToString(),
-                    data.AdyenEncryptedData,
+                    dto.AdyenEncryptedData,
+                    dto.Contract,
                     "EUR");
                 if (result.ResultCode != ResultCodeEnum.Authorised)
                 {
@@ -90,17 +86,25 @@ namespace WebApplication1.Controllers
                 return BadRequest(obj);
             }
         }
+        #endregion
+        public IActionResult Pay(string recurringDetailReference)
+        {
+            ViewData["RecurringDetailReference"] = recurringDetailReference;
+            return View("Pay");
+        }
 
-        public IActionResult CreatePaymentUsingOldData(string recurringDetailReference)
+        #region Pay using saved card[onclick]
+
+        public IActionResult PayUsingOldData(string recurringDetailReference)
         {
             ViewData["generationtime"] = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
             ViewData["RecurringDetailReference"] = recurringDetailReference;
-            return View("CreatePaymentUsingOldData");
+            return View("PayUsingOldData");
         }
 
         [HttpPost]
         public IActionResult CreatePaymentUsingOldDataPost(string recurringDetailReference,
-            PaymentModelView data)
+            PaymentModelDto data)
         {
             var shopper = Shopper.Default;
             try
@@ -110,6 +114,7 @@ namespace WebApplication1.Controllers
                     shopper,
                     Guid.NewGuid().ToString(),
                     data.AdyenEncryptedData,
+                    Contract.Oneclick,
                     "EUR",
                     recurringDetailReference);
                 if (result.ResultCode == ResultCodeEnum.Authorised)
@@ -132,5 +137,43 @@ namespace WebApplication1.Controllers
             }
 
         }
+        #endregion
+
+        #region Pay abonnemnts action cloub be launched by user
+
+
+        public IActionResult PaySubscription(string recurringDetailReference)
+        {
+            var shopper = Shopper.Default;
+            try
+            {
+                const long amount = 25800;
+                var result = _adyenClient.CreatePaymentForSubscription(
+                    amount,
+                    shopper,
+                    Guid.NewGuid().ToString(),
+                    Contract.Recurring,
+                    recurringDetailReference, "EUR");
+                if (result.ResultCode == ResultCodeEnum.Authorised)
+                {
+                    var captureResult = _adyenClient.Capture(result.PspReference, "EUR", amount);
+                    if (captureResult.Response == ResponseEnum.CaptureReceived)
+                    {
+                        return Ok(captureResult);
+                    }
+
+                    return BadRequest(captureResult);
+                }
+                return BadRequest(result);
+            }
+            catch (WebException e)
+            {
+                var resp = new StreamReader(e.Response.GetResponseStream()).ReadToEnd();
+                dynamic obj = JsonConvert.DeserializeObject(resp);
+                return Ok(obj);
+            }
+        }
+        #endregion
+
     }
 }

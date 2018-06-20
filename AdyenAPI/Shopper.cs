@@ -7,7 +7,7 @@
             Email = "attef@alphorm.com",
             FirstName = "Attef",
             LastName = "Touina",
-            Reference = "AttefNewRef"
+            Reference = "AttefLolf"
         };
         public string Email { get; set; }
         public string Reference { get; set; }

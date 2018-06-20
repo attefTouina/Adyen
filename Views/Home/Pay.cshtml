@@ -1,0 +1,17 @@
+﻿
+@{
+    ViewData["Title"] = "Pay";
+}
+
+<h2>Pay using card @ViewData["RecurringDetailReference"]</h2>
+
+<form method="GET" action="/Home/PayUsingOldData">
+    <input type="submit" value="Pay using this card" /> (onclick stuff)<br />
+    @Html.Hidden("recurringDetailReference", ViewData["RecurringDetailReference"])
+</form>
+
+
+<form method="GET" action="/Home/PaySubscription">
+    <input type="submit" value="Pay subscription using this card" /> [could by lanched by system]
+    @Html.Hidden("recurringDetailReference", ViewData["RecurringDetailReference"])
+</form>

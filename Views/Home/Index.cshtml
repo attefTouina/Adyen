@@ -9,7 +9,7 @@
 <div class="row">
     <div class="col-md-3">
         <h2>My shopping cards (My reference is @Model.ShopperReference)</h2>
-        <form method="GET" action="/Home/CreatePaymentUsingOldData">
+        <form method="GET" action="/Home/Pay">
             <table border="1">
                 <thead>
                 <th>Name :</th>
@@ -20,6 +20,7 @@
                 <th>holdername:</th>
                 <th>mm/yyyy:</th>
                 <th>Brand: </th>
+                <th>Contract types: </th>
                 </thead>
                 <tbody>
 
@@ -34,14 +35,20 @@
                             <td> @shoppinCard.RecurringDetail.Card.HolderName</td>
                             <td> @shoppinCard.RecurringDetail.Card.ExpiryMonth/@shoppinCard.RecurringDetail.Card.ExpiryYear</td>
                             <td>@shoppinCard.RecurringDetail.Card.Brand</td>
+                            <td>
+                                @foreach (var t in shoppinCard.RecurringDetail.ContractTypes)
+                                {
+                                    <span>@t</span>
+                                }
+                            </td>
                             <td>@Html.RadioButton("RecurringDetailReference", shoppinCard.RecurringDetail.RecurringDetailReference)</td>
                         </tr>
                     }
                 </tbody>
             </table>
-            <input type="submit" value="Pay" />
+            <input type="submit" value="Pay using this card" /> <br/>
         </form>
-        <a href="/home/AddCreditCard">Add credit card</a><br/>
+        <a href="/home/AddCreditCard">Add credit card</a><br />
         <a href="/home/refund">Refund a payment</a>
     </div>
 </div>
