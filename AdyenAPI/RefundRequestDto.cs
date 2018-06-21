@@ -3,6 +3,6 @@
     public class RefundRequestDto
     {
         public string PspReference { get; set; }
-        public long Amount { get; set; }
+        public int Amount { get; set; }
     }
 }

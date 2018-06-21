@@ -6,23 +6,19 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using WebApplication1.AdyenAPI;
 
-
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace WebApplication1.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly AdyenClient _adyenClient;
+        private readonly IAdyenClient _adyenClient;
 
-        public HomeController(AdyenConfiguration adyenConfiguration, AdyenClient adyenClient)
-        {
-            _adyenClient = adyenClient;
-        }
+        public HomeController(IAdyenClient adyenClient) => _adyenClient = adyenClient;
 
         public IActionResult Index()
         {
-            var shoppingCards = _adyenClient.ListRecurringDetails(Shopper.Default.Reference);
+            var shoppingCards = _adyenClient.GetRecurringDetails(Shopper.Default.Reference);
             return View("Index", shoppingCards);
         }
 
@@ -67,12 +63,7 @@ namespace WebApplication1.Controllers
             var shopper = Shopper.Default;
             try
             {
-                var result = _adyenClient.CreatePayment(0,
-                    shopper,
-                    Guid.NewGuid().ToString(),
-                    dto.AdyenEncryptedData,
-                    dto.Contract,
-                    "EUR");
+                var result = _adyenClient.AddCreditCard(shopper, dto.AdyenEncryptedData);
                 if (result.ResultCode != ResultCodeEnum.Authorised)
                 {
                     return BadRequest(result);
@@ -87,13 +78,14 @@ namespace WebApplication1.Controllers
             }
         }
         #endregion
+
         public IActionResult Pay(string recurringDetailReference)
         {
             ViewData["RecurringDetailReference"] = recurringDetailReference;
             return View("Pay");
         }
 
-        #region Pay using saved card[onclick]
+        #region Pay using saved card [onclick]
 
         public IActionResult PayUsingOldData(string recurringDetailReference)
         {
@@ -109,14 +101,10 @@ namespace WebApplication1.Controllers
             var shopper = Shopper.Default;
             try
             {
-                var result = _adyenClient.CreatePayment(
+                var result = _adyenClient.AuthoriseRecurringOnClick(
                     data.Amount,
-                    shopper,
-                    Guid.NewGuid().ToString(),
-                    data.AdyenEncryptedData,
-                    Contract.Oneclick,
                     "EUR",
-                    recurringDetailReference);
+                    shopper, Guid.NewGuid().ToString(), recurringDetailReference, data.AdyenEncryptedData);
                 if (result.ResultCode == ResultCodeEnum.Authorised)
                 {
                     var captureResult = _adyenClient.Capture(result.PspReference, "EUR", data.Amount);
@@ -139,21 +127,16 @@ namespace WebApplication1.Controllers
         }
         #endregion
 
-        #region Pay abonnemnts action cloub be launched by user
-
+        #region Pay abonnemnts action cloud be launched by user
 
         public IActionResult PaySubscription(string recurringDetailReference)
         {
             var shopper = Shopper.Default;
             try
             {
-                const long amount = 25800;
-                var result = _adyenClient.CreatePaymentForSubscription(
-                    amount,
-                    shopper,
-                    Guid.NewGuid().ToString(),
-                    Contract.Recurring,
-                    recurringDetailReference, "EUR");
+                const int amount = 25800;
+                var result = _adyenClient.AuthoriseRecurring(
+                    amount, "EUR", shopper, Guid.NewGuid().ToString(), recurringDetailReference);
                 if (result.ResultCode == ResultCodeEnum.Authorised)
                 {
                     var captureResult = _adyenClient.Capture(result.PspReference, "EUR", amount);
@@ -175,5 +158,11 @@ namespace WebApplication1.Controllers
         }
         #endregion
 
+
+        public IActionResult Disable(string recurringDetailReference, string shopperReference)
+        {
+            var result = _adyenClient.Disable(recurringDetailReference, shopperReference);
+            return Ok(result);
+        }
     }
 }

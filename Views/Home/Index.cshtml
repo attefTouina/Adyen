@@ -21,6 +21,7 @@
                 <th>mm/yyyy:</th>
                 <th>Brand: </th>
                 <th>Contract types: </th>
+                <th>Actions </th>
                 </thead>
                 <tbody>
 
@@ -34,12 +35,15 @@
                             <td>@shoppinCard.RecurringDetail.PaymentMethodVariant</td>
                             <td> @shoppinCard.RecurringDetail.Card.HolderName</td>
                             <td> @shoppinCard.RecurringDetail.Card.ExpiryMonth/@shoppinCard.RecurringDetail.Card.ExpiryYear</td>
-                            <td>@shoppinCard.RecurringDetail.Card.Brand</td>
+                            <td> @shoppinCard.RecurringDetail.Card.Brand</td>
                             <td>
                                 @foreach (var t in shoppinCard.RecurringDetail.ContractTypes)
                                 {
                                     <span>@t</span>
                                 }
+                            </td>
+                            <td>
+                                <a href="/home/disable?recurringDetailReference=@shoppinCard.RecurringDetail.RecurringDetailReference&shopperReference=@Model.ShopperReference">Disable (c'est supprimer chez adyen)</a>
                             </td>
                             <td>@Html.RadioButton("RecurringDetailReference", shoppinCard.RecurringDetail.RecurringDetailReference)</td>
                         </tr>

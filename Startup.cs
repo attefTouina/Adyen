@@ -38,6 +38,7 @@ namespace WebApplication1
 
             services.Configure<AdyenConfiguration>(Configuration.GetSection("Adyen"));
             services.AddTransient(x => x.GetService<IOptions<AdyenConfiguration>>().Value);
+            services.AddTransient<IAdyenClient, AdyenClient>();
             services.AddTransient<AdyenClient>();
         }
 
